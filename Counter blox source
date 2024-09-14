@@ -1,0 +1,57 @@
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local AimSmoothness = 0.15 -- Adjust for smoothness of camera lock
+
+local target
+local aiming = false -- Variable to track if the player is aiming or not
+
+-- Function to find the closest enemy player
+local function getClosestPlayer()
+    local closestDistance = math.huge
+    local closestPlayer = nil
+
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Team ~= LocalPlayer.Team and player.Character and player.Character:FindFirstChild("Head") then
+            local char = player.Character
+            local distance = (char.Head.Position - LocalPlayer.Character.Head.Position).magnitude
+            if distance < closestDistance then
+                closestDistance = distance
+                closestPlayer = player
+            end
+        end
+    end
+    return closestPlayer
+end
+
+-- Main camera locking function
+local function cameraLock()
+    target = getClosestPlayer()
+    
+    if target and target.Character and target.Character:FindFirstChild("Head") then
+        local targetPosition = target.Character.Head.Position
+        local cameraPosition = Camera.CFrame.p
+        local direction = (targetPosition - cameraPosition).unit
+
+        -- Smooth camera lock to the target's position
+        Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(cameraPosition, cameraPosition + direction), AimSmoothness)
+    end
+end
+
+-- Toggle aim with 'E' key
+UserInputService.InputBegan:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.E then -- Key to toggle the aim (E in this case)
+        aiming = not aiming
+    end
+end)
+
+-- Update loop for camera locking
+RunService.RenderStepped:Connect(function()
+    if aiming then
+        cameraLock()
+    end
+end)
+
+
