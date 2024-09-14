@@ -9,7 +9,7 @@ local target
 local aiming = false
 
 -- Create the FOV circle
-local fovRadius = 400 -- Adjust the radius to your preference
+local fovRadius = 100 -- Adjust the radius to your preference
 local fovCircle = Drawing.new("Circle")
 fovCircle.Radius = fovRadius
 fovCircle.Thickness = 1
@@ -25,18 +25,34 @@ local function isInFOV(screenPosition)
     return distance <= fovRadius
 end
 
--- Function to find the closest player within the FOV
+-- Function to predict the future position of a player
+local function predictPosition(player, time)
+    local character = player.Character
+    if not character or not character:FindFirstChild("HumanoidRootPart") then
+        return nil
+    end
+    
+    local humanoidRootPart = character.HumanoidRootPart
+    local velocity = humanoidRootPart.Velocity
+    local currentPosition = humanoidRootPart.Position
+    
+    return currentPosition + velocity * time
+end
+
+-- Function to find the closest player to the LocalPlayer
 local function getClosestPlayer()
     local closestDistance = math.huge
     local closestPlayer = nil
+    local predictionTime = 0.2 -- Adjust the prediction time as needed
 
     for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Team ~= LocalPlayer.Team and player.Character and player.Character:FindFirstChild("Head") then
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
             local char = player.Character
-            local screenPosition, onScreen = Camera:WorldToScreenPoint(char.Head.Position)
+            local predictedPosition = predictPosition(player, predictionTime)
+            local screenPosition, onScreen = Camera:WorldToScreenPoint(predictedPosition)
             
-            if onScreen and isInFOV(Vector2.new(screenPosition.X, screenPosition.Y)) then
-                local distance = (char.Head.Position - LocalPlayer.Character.Head.Position).magnitude
+            if onScreen then
+                local distance = (predictedPosition - LocalPlayer.Character.HumanoidRootPart.Position).magnitude
                 if distance < closestDistance then
                     closestDistance = distance
                     closestPlayer = player
@@ -51,8 +67,8 @@ end
 local function cameraLock()
     target = getClosestPlayer()
     
-    if target and target.Character and target.Character:FindFirstChild("Head") then
-        local targetPosition = target.Character.Head.Position
+    if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+        local targetPosition = predictPosition(target, 0.2) -- Adjust the prediction time as needed
         local cameraPosition = Camera.CFrame.p
         local direction = (targetPosition - cameraPosition).unit
 
