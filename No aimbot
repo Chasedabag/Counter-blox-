@@ -30,7 +30,7 @@ print("Executed")
         weapon = {["enabled"] = true, ["color"] = Color3.fromRGB(255, 255, 255)},
         --
         chams = {["enabled"] = true, ["color"] = Color3.fromRGB(255, 255, 255), ["transparency"] = 0},
-        glow = {["false"] = false, ["color"] = Color3.fromRGB(255, 0, 140), ["transparency"] = 0},
+        glow = {["enabled"] = false, ["color"] = Color3.fromRGB(255, 0, 140), ["transparency"] = 0},
 
         skeleton = {["skeleton"] = false, ["color"] = Color3.fromRGB(255, 255, 255)}
 
@@ -86,14 +86,26 @@ RightGroupBox:AddToggle('boxes', {
                     esplibrary.names.enabled = Value
                 end})
 
-                RightGroupBox:AddToggle('skeleton', {
-                    Text = 'skeleton esp',
+                RightGroupBox:AddToggle('chams', {
+                    Text = 'chams esp',
                     Default = false, 
                     Callback = function(Value)
-                        esplibrary.skeleton.enabled = Value
+                        esplibrary.chams.enabled = Value
                     end})
 
+ RightGroupBox:AddToggle('chams', {
+                    Text = 'chams esp',
+                    Default = false, 
+                    Callback = function(Value)
+                        esplibrary.chams.enabled = Value
+                    end})
 
+     RightGroupBox:AddToggle('glow', {
+                    Text = 'glow esp',
+                    Default = false, 
+                    Callback = function(Value)
+                        esplibrary.glow.enabled = Value
+                    end})
 
 
 
@@ -105,15 +117,7 @@ RightGroupBox:AddToggle('boxes', {
                         Text = 'Aimbot',
                         Default = false, 
                         Callback = function(Value)
-                            aimbotEnabled = Value
-                            if aimbotEnabled and not running then
-                                running = true
-                                Aimbot()  -- Start the aimbot when toggled on
-                            elseif not aimbotEnabled then
-                                running = false  -- Stop the loop when toggled off
-                            end
-                        end
-                    })
+                   
                     
                 
                     
