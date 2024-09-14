@@ -93,37 +93,15 @@ RightGroupBox:AddToggle('boxes', {
                         esplibrary.chams.enabled = Value
                     end})
 
- RightGroupBox:AddToggle('chams', {
-                    Text = 'chams esp',
-                    Default = false, 
-                    Callback = function(Value)
-                        esplibrary.chams.enabled = Value
-                    end})
-
      RightGroupBox:AddToggle('glow', {
                     Text = 'glow esp',
                     Default = false, 
                     Callback = function(Value)
                         esplibrary.glow.enabled = Value
                     end})
-
-
-
-
-
-
-
-                    RightGroupBox:AddToggle('Aimbot', {
-                        Text = 'Aimbot',
-                        Default = false, 
-                        Callback = function(Value)
-                   
                     
                 
-                    
-
-
-
+                
 
     local utility = {}
     local connections = {}
