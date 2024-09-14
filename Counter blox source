@@ -1,3 +1,9 @@
+local repo = 'https://raw.githubusercontent.com/violin-suzutsuki/LinoriaLib/main/'
+
+local Library = loadstring(game:HttpGet(repo .. 'Library.lua'))()
+local ThemeManager = loadstring(game:HttpGet(repo .. 'addons/ThemeManager.lua'))()
+local SaveManager = loadstring(game:HttpGet(repo .. 'addons/SaveManager.lua'))()
+
 print("Executed")
     local esplibrary = {
         enabled = true,
@@ -20,8 +26,8 @@ print("Executed")
         healthtext = {["enabled"] = true},
         -- TEXT
         names = {["enabled"] = true, ["displaynames"] = false, ["color"] = Color3.fromRGB(255, 255, 255)},
-        distance = {["false"] = false, ["color"] = Color3.fromRGB(255, 255, 255)},
-        weapon = {["enabled"] = true, ["color"] = Color3.fromRGB(255, 255, 255)},
+        distance = {["false"] = true, ["color"] = Color3.fromRGB(255, 255, 255)},
+        weapon = {["false"] = true, ["color"] = Color3.fromRGB(255, 255, 255)},
         --
         chams = {["false"] = false, ["color"] = Color3.fromRGB(255, 255, 255), ["transparency"] = 0},
         glow = {["false"] = false, ["color"] = Color3.fromRGB(255, 0, 140), ["transparency"] = 0},
@@ -30,6 +36,259 @@ print("Executed")
 
 
     }
+
+
+
+
+
+
+local Window = Library:CreateWindow({
+     Title = 'SavWare',
+    Center = true,
+    AutoShow = true,
+    TabPadding = 8,
+    MenuFadeTime = 0.2
+})
+
+local Tabs = {
+    Main = Window:AddTab('Main'),
+    ['UI Settings'] = Window:AddTab('UI Settings'),
+}
+
+
+local LeftGroupBox = Tabs.Main:AddLeftGroupbox('Aimbot')
+local RightGroupBox = Tabs.Main:AddLeftGroupbox('visuals')
+RightGroupBox:AddToggle('boxes', {
+    Text = 'boxes',
+    Default = false, 
+    Callback = function(Value)
+        esplibrary.boxes.enabled = Value
+    end})
+    
+    RightGroupBox:AddToggle('healthbar', {
+        Text = 'healthbar',
+        Default = false, 
+        Callback = function(Value)
+            esplibrary.healthbars.enabled = Value
+        end})
+
+        RightGroupBox:AddToggle('healthtext', {
+            Text = 'healthtext',
+            Default = false, 
+            Callback = function(Value)
+                esplibrary.healthtext.enabled = Value
+            end})
+            
+            RightGroupBox:AddToggle('Names', {
+                Text = 'Names',
+                Default = false, 
+                Callback = function(Value)
+                    esplibrary.names.enabled = Value
+                end})
+
+                RightGroupBox:AddToggle('skeleton', {
+                    Text = 'skeleton esp',
+                    Default = false, 
+                    Callback = function(Value)
+                        esplibrary.skeleton.enabled = Value
+                    end})
+
+
+
+
+
+
+
+
+
+                    RightGroupBox:AddToggle('Aimbot', {
+                        Text = 'Aimbot',
+                        Default = false, 
+                        Callback = function(Value)
+                            aimbotEnabled = Value
+                            if aimbotEnabled and not running then
+                                running = true
+                                Aimbot()  -- Start the aimbot when toggled on
+                            elseif not aimbotEnabled then
+                                running = false  -- Stop the loop when toggled off
+                            end
+                        end
+                    })
+                    
+                
+               -- Main camera locking function
+local function cameraLock()
+    target = getClosestPlayer()
+    
+    if target and target.Character and target.Character:FindFirstChild("Head") then
+        local targetPosition = target.Character.Head.Position
+        local cameraPosition = Camera.CFrame.p
+        local direction = (targetPosition - cameraPosition).unit
+
+        -- Smooth camera lock to the target's position
+        Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(cameraPosition, cameraPosition + direction), AimSmoothness)
+    end
+end
+
+-- Toggle aim with 'E' key
+UserInputService.InputBegan:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.E then -- Key to toggle the aim (E in this case)
+        aiming = not aiming
+    end
+end)
+
+-- Update loop for camera locking
+RunService.RenderStepped:Connect(function()
+    if aiming then
+        cameraLock()
+    end
+end)
+
+
+
+local function findClosestTarget()
+    local closestTarget = nil
+    local closestDistance = math.huge
+    local player = game:GetService("Players").LocalPlayer
+    local fovCircleRadius = Converted["_Frame"].Size.X.Offset / 2
+    local screenCenter = Vector2.new(workspace.CurrentCamera.ViewportSize.X / 2, workspace.CurrentCamera.ViewportSize.Y * 0.55) -- Adjusted to match the FOV circle
+
+    for _, v in pairs(game:GetService("Players"):GetPlayers()) do
+        if v ~= player and v.Character and v.Character:FindFirstChild("Head") then
+            -- Team Check
+            if v.Team ~= player.Team then
+                local head = v.Character.Head
+                local screenPos, onScreen = workspace.CurrentCamera:WorldToViewportPoint(head.Position)
+                if onScreen then
+                    local distance = (screenCenter - Vector2.new(screenPos.X, screenPos.Y)).Magnitude
+                    if distance < fovCircleRadius and distance < closestDistance then
+                        closestDistance = distance
+                        closestTarget = head
+                    end
+                end
+            end
+        end
+    end
+
+    return closestTarget
+end
+
+
+
+
+
+local function aimAtTarget(target)
+    local player = game:GetService("Players").LocalPlayer
+    local mouse = player:GetMouse()
+    -- Adjust the mouse to aim at the target (target is assumed to be the head of the character)
+    mouse.Hit = target.CFrame
+end
+
+
+local function aimAtTarget(target)
+    local player = game:GetService("Players").LocalPlayer
+    local mouse = player:GetMouse()
+
+    -- Get the 2D screen position of the target
+    local targetScreenPos = workspace.CurrentCamera:WorldToViewportPoint(target.Position)
+    local screenCenter = Vector2.new(workspace.CurrentCamera.ViewportSize.X / 2, workspace.CurrentCamera.ViewportSize.Y * 0.5)
+
+    local delta = Vector2.new(targetScreenPos.X, targetScreenPos.Y) - screenCenter
+    
+
+    local distance = (workspace.CurrentCamera.CFrame.Position - target.Position).Magnitude
+    local correctionFactor = math.clamp(distance / 50, 0.1, 1) 
+    
+
+    local newMousePos = delta * correctionFactor * smoothing
+
+    mousemoverel(newMousePos.X, newMousePos.Y)
+
+    aimbotLine.From = screenCenter
+    aimbotLine.To = Vector2.new(targetScreenPos.X, targetScreenPos.Y)
+end
+
+-- Aimbot logic
+game:GetService("RunService").RenderStepped:Connect(function()
+    local target = findClosestTarget()
+    if target then
+        -- Update the line position even if the aimbot is not active
+        local targetScreenPos = workspace.CurrentCamera:WorldToViewportPoint(target.Position)
+        aimbotLine.From = Vector2.new(workspace.CurrentCamera.ViewportSize.X / 2, workspace.CurrentCamera.ViewportSize.Y * 0.5)
+        aimbotLine.To = Vector2.new(targetScreenPos.X, targetScreenPos.Y)
+
+        if aimbotEnabled then
+            aimAtTarget(target)
+        end
+    else
+        aimbotLine.To = aimbotLine.From
+    end
+end)
+
+game:GetService("UserInputService").InputBegan:Connect(function(input)
+    if input.KeyCode == aimbotKey then
+        aimbotEnabled = true
+    end
+end)
+
+game:GetService("UserInputService").InputEnded:Connect(function(input)
+    if input.KeyCode == aimbotKey then
+        aimbotEnabled = false
+    end
+end)
+
+local function createRotationScript()
+	local script = Instance.new("LocalScript")
+	script.Name = "rotation"
+	script.Parent = Converted["_Frame"]
+
+	local frame = script.Parent
+	local rotationSpeed = 10
+
+	local function rotateFrame()
+		while true do
+			frame.Rotation = frame.Rotation + rotationSpeed
+			if frame.Rotation >= 360 then
+				frame.Rotation = 0
+			end
+			wait(0.01)
+		end
+	end
+
+	rotateFrame()
+end
+
+local function createFOVAdjustScript()
+    local script = Instance.new("LocalScript")
+    script.Name = "fov"
+    script.Parent = Converted["_Frame"]
+
+    local frame = script.Parent
+    local camera = workspace.CurrentCamera
+
+    local function updateFrameSize()
+        local fov = camera.FieldOfView
+        local scaleFactorX = Size1.X.Offset / fov  -- Extract X offset for scaling
+        local scaleFactorY = Size1.Y.Offset / fov  -- Extract Y offset for scaling
+        local newSize = UDim2.new(0, 200 * scaleFactorX, 0, 200 * scaleFactorY)
+        frame.Size = newSize
+    end
+
+    updateFrameSize()
+    camera:GetPropertyChangedSignal("FieldOfView"):Connect(updateFrameSize)
+end
+
+
+coroutine.wrap(createRotationScript)()
+coroutine.wrap(createFOVAdjustScript)()
+
+
+local aimbotEnabled = false
+local running = false
+
+
+
+
 
 
     local utility = {}
@@ -564,7 +823,6 @@ print("Executed")
         mainconnection:Disconnect()
     end)
     return esplibrary
-
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
@@ -593,32 +851,5 @@ local function getClosestPlayer()
     return closestPlayer
 end
 
--- Main camera locking function
-local function cameraLock()
-    target = getClosestPlayer()
-    
-    if target and target.Character and target.Character:FindFirstChild("Head") then
-        local targetPosition = target.Character.Head.Position
-        local cameraPosition = Camera.CFrame.p
-        local direction = (targetPosition - cameraPosition).unit
-
-        -- Smooth camera lock to the target's position
-        Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(cameraPosition, cameraPosition + direction), AimSmoothness)
-    end
-end
-
--- Toggle aim with 'E' key
-UserInputService.InputBegan:Connect(function(input)
-    if input.KeyCode == Enum.KeyCode.E then -- Key to toggle the aim (E in this case)
-        aiming = not aiming
-    end
-end)
-
--- Update loop for camera locking
-RunService.RenderStepped:Connect(function()
-    if aiming then
-        cameraLock()
-    end
-end)
 
 
