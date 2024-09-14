@@ -1,0 +1,87 @@
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local AimSmoothness = 0.15 -- Adjust this value for smoother or snappier aim
+
+local target
+local aiming = false
+
+-- Create the FOV circle
+local fovRadius = 100 -- Adjust the radius to your preference
+local fovCircle = Drawing.new("Circle")
+fovCircle.Radius = fovRadius
+fovCircle.Thickness = 1
+fovCircle.Color = Color3.fromRGB(255, 0, 0) -- Red color
+fovCircle.NumSides = 100
+fovCircle.Filled = false
+fovCircle.Visible = false
+
+-- Function to check if a position is within the FOV circle
+local function isInFOV(screenPosition)
+    local fovCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+    local distance = (screenPosition - fovCenter).magnitude
+    return distance <= fovRadius
+end
+
+-- Function to find the closest player within the FOV
+local function getClosestPlayer()
+    local closestDistance = math.huge
+    local closestPlayer = nil
+
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Team ~= LocalPlayer.Team and player.Character and player.Character:FindFirstChild("Head") then
+            local char = player.Character
+            local screenPosition, onScreen = Camera:WorldToScreenPoint(char.Head.Position)
+            
+            if onScreen and isInFOV(Vector2.new(screenPosition.X, screenPosition.Y)) then
+                local distance = (char.Head.Position - LocalPlayer.Character.Head.Position).magnitude
+                if distance < closestDistance then
+                    closestDistance = distance
+                    closestPlayer = player
+                end
+            end
+        end
+    end
+    return closestPlayer
+end
+
+-- Main camera locking function
+local function cameraLock()
+    target = getClosestPlayer()
+    
+    if target and target.Character and target.Character:FindFirstChild("Head") then
+        local targetPosition = target.Character.Head.Position
+        local cameraPosition = Camera.CFrame.p
+        local direction = (targetPosition - cameraPosition).unit
+
+        Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(cameraPosition, cameraPosition + direction), AimSmoothness)
+    end
+end
+
+-- Toggle function for aim when holding down 'E'
+UserInputService.InputBegan:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.E then -- Change 'E' to your preferred key
+        aiming = true
+        fovCircle.Visible = true
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.E then -- Change 'E' to your preferred key
+        aiming = false
+        fovCircle.Visible = false
+    end
+end)
+
+-- Update loop for camera locking and FOV circle
+RunService.RenderStepped:Connect(function()
+    if aiming then
+        cameraLock()
+    end
+    
+    -- Update the FOV circle position
+    local screenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+    fovCircle.Position = screenCenter
+end)
