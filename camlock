@@ -3,7 +3,7 @@ local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
-local AimSmoothness = 0.15 -- Adjust this value for smoother or snappier aim
+local AimSmoothness = 1 -- Adjust this value for smoother or snappier aim
 
 local target
 local aiming = false
@@ -35,45 +35,64 @@ local function predictPosition(player, time)
     local humanoidRootPart = character.HumanoidRootPart
     local velocity = humanoidRootPart.Velocity
     local currentPosition = humanoidRootPart.Position
-    
+
+    -- Predict future position with a focus on shorter prediction times for pistols
     return currentPosition + velocity * time
 end
 
--- Function to find the closest player to the LocalPlayer
-local function getClosestPlayer()
-    local closestDistance = math.huge
-    local closestPlayer = nil
-    local predictionTime = 0.2 -- Adjust the prediction time as needed
+-- Function to get the best prediction time for fast-paced weapons
+local function getBestPredictionTime(player)
+    local character = player.Character
+    if not character or not character:FindFirstChild("HumanoidRootPart") then
+        return 0.1
+    end
+    
+    local velocity = character.HumanoidRootPart.Velocity
+    local speed = velocity.magnitude
 
+    -- Shorter prediction time for faster aiming
+    return math.clamp(speed / 50, 0.05, 0.1) -- Adjust prediction time for pistols
+end
+
+-- Function to find the best target to lock onto
+local function getBestTarget()
+    local bestTarget = nil
+    local bestHitChance = 0
+    
     for _, player in pairs(Players:GetPlayers()) do
         if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-            local char = player.Character
+            local predictionTime = getBestPredictionTime(player)
             local predictedPosition = predictPosition(player, predictionTime)
             local screenPosition, onScreen = Camera:WorldToScreenPoint(predictedPosition)
             
-            if onScreen then
-                local distance = (predictedPosition - LocalPlayer.Character.HumanoidRootPart.Position).magnitude
-                if distance < closestDistance then
-                    closestDistance = distance
-                    closestPlayer = player
+            if onScreen and isInFOV(Vector2.new(screenPosition.X, screenPosition.Y)) then
+                -- Calculate hit chance (simplified example)
+                local hitChance = 1 / (predictedPosition - LocalPlayer.Character.HumanoidRootPart.Position).magnitude
+                
+                if hitChance > bestHitChance then
+                    bestHitChance = hitChance
+                    bestTarget = player
                 end
             end
         end
     end
-    return closestPlayer
+    return bestTarget
 end
 
 -- Main camera locking function
 local function cameraLock()
-    target = getClosestPlayer()
-    
-    if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-        local targetPosition = predictPosition(target, 0.2) -- Adjust the prediction time as needed
-        local cameraPosition = Camera.CFrame.p
-        local direction = (targetPosition - cameraPosition).unit
-
-        Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(cameraPosition, cameraPosition + direction), AimSmoothness)
+    if not target or not target.Character or not target.Character:FindFirstChild("HumanoidRootPart") then
+        return
     end
+
+    local predictionTime = getBestPredictionTime(target)
+    local targetPosition = predictPosition(target, predictionTime)
+    local cameraPosition = Camera.CFrame.p
+    local direction = (targetPosition - cameraPosition).unit
+
+    -- Smoothly adjust the camera towards the target
+    local targetCFrame = CFrame.new(cameraPosition, cameraPosition + direction)
+    Camera.CFrame = Camera.CFrame:Lerp(targetCFrame, AimSmoothness)
 end
 
 -- Toggle function for aim when holding down 'E'
@@ -94,7 +113,10 @@ end)
 -- Update loop for camera locking and FOV circle
 RunService.RenderStepped:Connect(function()
     if aiming then
-        cameraLock()
+        target = getBestTarget()
+        if target then
+            cameraLock()
+        end
     end
     
     -- Update the FOV circle position
