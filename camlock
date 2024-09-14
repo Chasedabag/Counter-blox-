@@ -9,7 +9,7 @@ local target
 local aiming = false
 
 -- Create the FOV circle
-local fovRadius = 100 -- Adjust the radius to your preference
+local fovRadius = 400 -- Adjust the radius to your preference
 local fovCircle = Drawing.new("Circle")
 fovCircle.Radius = fovRadius
 fovCircle.Thickness = 1
